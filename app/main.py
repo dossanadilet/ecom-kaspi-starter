@@ -3,8 +3,8 @@ import pandas as pd
 from pathlib import Path
 
 from app.economics import CostInputs, landed_cost, min_price_for_margin, roi_on_turnover, profit_per_unit
-from app.pricing import choose_price_grid
-from app.forecast import price_to_demand_linear
+from app.pricing   import choose_price_grid
+from app.forecast  import price_to_demand_linear
 
 st.set_page_config(page_title="Kaspi E-commerce MVP", layout="wide")
 st.title("Kaspi E-commerce MVP — Автоматизированный магазин (прототип)")
@@ -100,4 +100,5 @@ with tab4:
         st.caption("В следующих версиях добавим ROP/EOQ, риск OOS и KPI-дашборд.")
     else:
         st.warning(f"Файл {inv_path.name} не найден")
+
 
