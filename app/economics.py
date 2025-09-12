@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 # ======== Unit economics ========
+# TODO: вынести в отдельные модули
 
 @dataclass
 class CostInputs:
