@@ -1,0 +1,40 @@
+# === Python cache / compiled ===
+__pycache__/
+*.py[cod]
+*$py.class
+
+# === Virtual environments ===
+.venv/
+env/
+venv/
+ENV/
+
+# === Jupyter / IPython ===
+.ipynb_checkpoints
+*.ipynb_convert
+
+# === Data & logs (runtime, не хранить в Git) ===
+data/latest/
+data/daily/
+*.log
+
+# === System files ===
+.DS_Store
+Thumbs.db
+
+# === VS Code ===
+.vscode/
+.history/
+
+# === Streamlit / cache ===
+.streamlit/secrets.toml
+.streamlit/config.toml
+.streamlit/cache/
+.streamlit/logs/
+
+# === Other ===
+*.sqlite3
+*.db
+*.bak
+*.swp
+*.tmp
