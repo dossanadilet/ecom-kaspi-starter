@@ -1,0 +1,4 @@
+product_id,purchase_cn,intl_ship,customs,last_mile,pack,return_rate,mp_fee,ads_alloc,overhead,updated_at
+SKU001,1200,350,120,80,60,0.03,0.10,40,50,2025-09-01
+SKU002,600,250,80,60,40,0.02,0.10,20,30,2025-09-01
+SKU003,300,180,50,40,30,0.02,0.10,10,20,2025-09-01

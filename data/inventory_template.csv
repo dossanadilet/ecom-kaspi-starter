@@ -1,0 +1,4 @@
+product_id,on_hand,on_order,lead_time_days,review_period_days,updated_at
+SKU001,40,60,18,14,2025-09-01
+SKU002,120,0,12,14,2025-09-01
+SKU003,300,0,10,14,2025-09-01

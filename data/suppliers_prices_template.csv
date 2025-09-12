@@ -1,0 +1,4 @@
+product_id,supplier_name,contact,purchase_cn,moq,lead_time_days,notes
+SKU001,Guangzhou ChillKid,manager@chillkid.cn,1200,50,12,"Цвета: роз/син"
+SKU002,Shenzhen WirePro,sales@wirepro.cn,600,100,10,"PD 60W"
+SKU003,Ningbo EcoHome,info@ecohome.cn,300,200,8,"Целлюлозные"
