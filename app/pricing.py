@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from app.economics import profit_per_unit
+from economics import profit_per_unit
 
 def choose_price_grid(
     p0: float,
@@ -22,4 +22,5 @@ def choose_price_grid(
         candidates.append((p, profit, q))
     candidates.sort(key=lambda x: x[1], reverse=True)
     return candidates[0], candidates
+
 
