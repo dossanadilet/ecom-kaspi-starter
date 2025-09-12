@@ -13,7 +13,8 @@ import pandas as pd
 
 # локальные импорты (без префикса app.)
 from economics import (
-    CostInputs, landed_cost, min_price_for_margin, roi_on_turnover, profit_per_unit,
+    CostInputs, landed_cost, min_price_for_margin,
+    roi_on_turnover, profit_per_unit,
     reorder_point, safety_stock, eoq, z_value_for_service
 )
 
@@ -241,6 +242,7 @@ with tab4:
         st.caption("В следующих версиях добавим ROP/EOQ, риск OOS и KPI-дашборд.")
     else:
         st.warning(f"Файл {inv_path.name} не найден")
+
 
 
 
