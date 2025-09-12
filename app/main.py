@@ -13,9 +13,10 @@ import pandas as pd
 
 # локальные импорты (без префикса app.)
 from economics import (
-    CostInputs, landed_cost, min_price_for_margin,
-    roi_on_turnover, profit_per_unit
+    CostInputs, landed_cost, min_price_for_margin, roi_on_turnover, profit_per_unit,
+    reorder_point, safety_stock, eoq, z_value_for_service
 )
+
 from pricing   import choose_price_grid
 from forecast  import price_to_demand_linear
 
@@ -110,6 +111,31 @@ with tab3:
         mp_fee = float(r["mp_fee"])
 
         best, grid = choose_price_grid(base_price, c_land, mp_fee, q_func)
+
+        # Обоснование решения
+        best_price, best_profit, best_q = best
+        reason_lines = [
+            f"Базовая цена p0 = {base_price:.0f} ₸",
+            f"Landed cost = {c_land:.0f} ₸; комиссия MP = {mp_fee*100:.1f}%",
+            f"Эластичность спроса = {elasticity:.2f}; базовый спрос/нед = {base_q:.1f} шт",
+            f"Выбрана цена {best_price:.0f} ₸ → прибыль/нед ~ {best_profit:.0f} ₸ при спросе ~ {best_q:.1f} шт"
+        ]
+        st.info("Причина выбора цены:\n- " + "\n- ".join(reason_lines))
+        
+        # Экспорт прайса в CSV (на одну выбранную SKU)
+        price_export_df = pd.DataFrame([{
+            "product_id": r["product_id"],
+            "new_price": round(best_price, 2),
+            "explain": "; ".join(reason_lines)
+        }])
+        st.download_button(
+            "📥 Скачать price_export.csv (только выбранная SKU)",
+            data=price_export_df.to_csv(index=False).encode("utf-8"),
+            file_name="price_export.csv",
+            mime="text/csv"
+        )
+
+        
         st.write("**Сетка цен (±3%)** — цена, ожидаемая прибыль/нед, прогноз спроса/нед:")
         res_df = pd.DataFrame(grid, columns=["price","profit_week","q_week"])
         st.dataframe(res_df.style.format({"price":"{:.0f}","profit_week":"{:.0f}","q_week":"{:.1f}"}), use_container_width=True)
@@ -122,10 +148,100 @@ with tab4:
     st.header("Inventory & KPI (черновик)")
     if inv_path.exists():
         dfi = read_csv_smart(inv_path)
+
+        st.subheader("Расчёт точки заказа (ROP), страхового запаса и EOQ")
+
+        if market_path.exists():
+            dfm = read_csv_smart(market_path)
+        else:
+            dfm = None
+        
+        if costs_path.exists():
+            dfc = read_csv_smart(costs_path)
+        else:
+            dfc = None
+        
+        # Выбор SKU
+        sku_inv = st.selectbox("SKU для расчёта закупа", dfi["product_id"].tolist(), key="sku_inv")
+        row_inv = dfi[dfi["product_id"]==sku_inv].iloc[0].to_dict()
+        
+        # Прокинем расходы и комиссию (если есть)
+        if dfc is not None and sku_inv in dfc["product_id"].values:
+            row_cost = dfc[dfc["product_id"]==sku_inv].iloc[0].to_dict()
+            c_obj = CostInputs(
+                purchase_cn=row_cost["purchase_cn"],
+                intl_ship=row_cost["intl_ship"],
+                customs=row_cost["customs"],
+                last_mile=row_cost["last_mile"],
+                pack=row_cost["pack"],
+                return_rate=row_cost["return_rate"],
+                mp_fee=row_cost["mp_fee"],
+                ads_alloc=row_cost["ads_alloc"],
+                overhead=row_cost["overhead"],
+            )
+            c_land_inv = landed_cost(c_obj)
+        else:
+            c_obj, c_land_inv = None, 0.0
+        
+        colA, colB, colC = st.columns(3)
+        weekly_mean = colA.number_input("Прогноз спроса/нед (шт)", value=30.0, step=1.0)
+        weekly_sigma = colB.number_input("Стд. отклонение/нед (шт)", value=8.0, step=1.0)
+        service = colC.selectbox("Уровень сервиса", [0.90, 0.95, 0.97, 0.98, 0.99], index=1)
+        
+        LT = int(row_inv["lead_time_days"])
+        R  = int(row_inv["review_period_days"])
+        on_hand  = int(row_inv["on_hand"])
+        on_order = int(row_inv.get("on_order", 0))
+        
+        rop = reorder_point(weekly_mean, weekly_sigma, LT, R, service)
+        ss  = safety_stock(weekly_sigma, LT, R, service)
+        
+        need_qty = max(0.0, rop - (on_hand + on_order))
+        rec_qty = int(round(need_qty))
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Safety Stock (шт)", f"{ss:.0f}")
+        col2.metric("ROP (шт)", f"{rop:.0f}")
+        col3.metric("Рекомендуемый заказ (шт)", f"{rec_qty}")
+        
+        st.caption(f"LT={LT} дн, Review={R} дн; On-hand={on_hand}, On-order={on_order}; Z≈{z_value_for_service(service):.2f}")
+        
+        # EOQ (по желанию) — оценка годового спроса = weekly_mean*52
+        with st.expander("EOQ (экономический размер заказа)", expanded=False):
+            D_annual = st.number_input("Годовой спрос, шт/год", value=float(weekly_mean*52), step=50.0)
+            S_order  = st.number_input("Стоимость оформления заказа S (тг/заказ)", value=20000.0, step=1000.0)
+            H_hold   = st.number_input("Годовая стоимость хранения H (тг/шт/год)", value= c_land_inv*0.20 if c_land_inv else 100.0, step=10.0)
+            eoq_qty  = eoq(D_annual, S_order, H_hold)
+            st.write(f"EOQ ≈ **{eoq_qty:.0f} шт**")
+        
+        # Экспорт purchase_list.csv
+        purchase_df = pd.DataFrame([{
+            "product_id": sku_inv,
+            "recommended_qty": rec_qty,
+            "on_hand": on_hand,
+            "on_order": on_order,
+            "LT_days": LT,
+            "review_days": R,
+            "weekly_mean": weekly_mean,
+            "weekly_sigma": weekly_sigma,
+            "service_level": service,
+            "ROP": int(round(rop)),
+            "SafetyStock": int(round(ss)),
+            "EOQ": int(round(eoq_qty)) if 'eoq_qty' in locals() else "",
+        }])
+        st.download_button(
+            "📥 Скачать purchase_list.csv (рекомендация закупа)",
+            data=purchase_df.to_csv(index=False).encode("utf-8"),
+            file_name="purchase_list.csv",
+            mime="text/csv"
+        )
+
+        
         st.dataframe(dfi, use_container_width=True)
         st.caption("В следующих версиях добавим ROP/EOQ, риск OOS и KPI-дашборд.")
     else:
         st.warning(f"Файл {inv_path.name} не найден")
+
 
 
 
