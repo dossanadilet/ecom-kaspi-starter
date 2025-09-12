@@ -37,7 +37,7 @@ def roi_on_turnover(price: float, c_land: float, mp_fee: float) -> float:
 
 def z_value_for_service(level: float) -> float:
     """
-    Быстрый мэппинг уровня сервиса к Z (без scipy).
+    Мэппинг уровня сервиса к Z (без scipy).
     0.90 -> 1.28, 0.95 -> 1.65, 0.97 -> 1.88, 0.98 -> 2.05, 0.99 -> 2.33
     """
     table = {
@@ -47,7 +47,6 @@ def z_value_for_service(level: float) -> float:
         0.98: 2.05,
         0.99: 2.33,
     }
-    # округлим до ближайшего ключа
     closest = min(table.keys(), key=lambda k: abs(k - level))
     return table[closest]
 
@@ -72,7 +71,7 @@ def reorder_point(weekly_mean: float, weekly_sigma: float, lead_time_days: int, 
 
 def eoq(annual_demand_units: float, setup_cost_per_order: float, annual_holding_cost_per_unit: float) -> float:
     """
-    Классическая формула EOQ = sqrt( (2 * D * S) / H )
+    EOQ = sqrt( (2 * D * S) / H )
     D — годовой спрос (шт/год), S — стоимость размещения заказа,
     H — годовая стоимость хранения на единицу (тг/шт/год).
     """
@@ -80,3 +79,4 @@ def eoq(annual_demand_units: float, setup_cost_per_order: float, annual_holding_
         return 0.0
     from math import sqrt
     return sqrt((2.0 * annual_demand_units * setup_cost_per_order) / annual_holding_cost_per_unit)
+
