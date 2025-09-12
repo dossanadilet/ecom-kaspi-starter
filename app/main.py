@@ -19,6 +19,18 @@ from economics import (
 from pricing   import choose_price_grid
 from forecast  import price_to_demand_linear
 
+def read_csv_smart(path):
+    # Пытаемся разными кодировками; игнорируем «битые» строки, если такие есть
+    encodings = ["utf-8", "utf-8-sig", "cp1251", "latin1"]
+    last_err = None
+    for enc in encodings:
+        try:
+            return pd.read_csv(path, encoding=enc, on_bad_lines="skip")
+        except UnicodeDecodeError as e:
+            last_err = e
+            continue
+    # Если все попытки провалились — пробрасываем последнюю ошибку
+    raise last_err
 
 st.set_page_config(page_title="Kaspi E-commerce MVP", layout="wide")
 st.title("Kaspi E-commerce MVP — Автоматизированный магазин (прототип)")
@@ -40,7 +52,7 @@ inv_path    = data_dir / "inventory_template.csv"
 with tab1:
     st.header("Market Scan (примерные данные)")
     if market_path.exists():
-        dfm = pd.read_csv(market_path)
+        dfm = read_csv_smart(market_path)
         st.dataframe(dfm, use_container_width=True)
         st.caption("Это пример среза рынка. Позже подключим парсер/ETL (1 и 15 числа).")
     else:
@@ -49,7 +61,7 @@ with tab1:
 with tab2:
     st.header("Landed Cost калькулятор")
     if costs_path.exists():
-        dfc = pd.read_csv(costs_path)
+        dfc = read_csv_smart(costs_path)
         st.dataframe(dfc, use_container_width=True)
         sku = st.selectbox("Выбери SKU", dfc["product_id"].tolist())
         row = dfc[dfc["product_id"]==sku].iloc[0].to_dict()
@@ -76,8 +88,8 @@ with tab2:
 with tab3:
     st.header("Forecast & Pricing (демо)")
     if market_path.exists() and costs_path.exists():
-        dfm = pd.read_csv(market_path)
-        dfc = pd.read_csv(costs_path)
+        dfm = read_csv_smart(market_path)
+        dfc = read_csv_smart(costs_path)
         merged = dfm.merge(dfc, on="product_id", how="inner")
         sku = st.selectbox("SKU для расчёта", merged["product_id"].tolist(), key="sku_fp")
         r = merged[merged["product_id"]==sku].iloc[0]
@@ -109,11 +121,12 @@ with tab3:
 with tab4:
     st.header("Inventory & KPI (черновик)")
     if inv_path.exists():
-        dfi = pd.read_csv(inv_path)
+        dfi = read_csv_smart(inv_path)
         st.dataframe(dfi, use_container_width=True)
         st.caption("В следующих версиях добавим ROP/EOQ, риск OOS и KPI-дашборд.")
     else:
         st.warning(f"Файл {inv_path.name} не найден")
+
 
 
 
