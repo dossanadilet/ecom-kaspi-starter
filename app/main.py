@@ -10,6 +10,7 @@ for p in (str(APP_DIR), str(ROOT_DIR)):
 
 import streamlit as st
 import pandas as pd
+from notify import tg_send
 
 # локальные импорты (без префикса app.)
 from economics import (
@@ -206,6 +207,17 @@ with tab4:
         col3.metric("Рекомендуемый заказ (шт)", f"{rec_qty}")
         
         st.caption(f"LT={LT} дн, Review={R} дн; On-hand={on_hand}, On-order={on_order}; Z≈{z_value_for_service(service):.2f}")
+        
+        # --- Telegram notify button ---
+        if st.button("Отправить рекомендацию закупа в Telegram", key="notify_po_one"):
+            msg = (
+                f"📦 <b>Закуп</b>\n"
+                f"SKU: <code>{sku_inv}</code>\n"
+                f"ROP={rop:.0f}, SS={ss:.0f}, рекомендую заказать: <b>{rec_qty} шт</b>\n"
+                f"On-hand={on_hand}, On-order={on_order}, LT={LT} д, Review={R} д"
+            )
+            ok = tg_send(msg)
+            st.toast("Ушло в Telegram ✅" if ok else "Не удалось отправить ❌")
         
         # EOQ (по желанию) — оценка годового спроса = weekly_mean*52
         with st.expander("EOQ (экономический размер заказа)", expanded=False):
