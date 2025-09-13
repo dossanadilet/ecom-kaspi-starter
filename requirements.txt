@@ -4,3 +4,7 @@ numpy==2.0.2
 matplotlib==3.9.0
 sqlalchemy==2.0.30
 pydantic==2.7.1
+requests
+beautifulsoup4
+lxml
+
