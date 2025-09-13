@@ -143,6 +143,23 @@ with tab3:
         st.dataframe(res_df.style.format({"price":"{:.0f}","profit_week":"{:.0f}","q_week":"{:.1f}"}), use_container_width=True)
         st.success(f"Рекомендованная цена: **{best[0]:.0f} ₸**; прибыль/нед: **{best[1]:.0f} ₸**; спрос: **{best[2]:.1f} шт**")
         st.caption("Дальше заменим на ML-прогноз (LightGBM) с реальными фичами.")
+        
+        # --- Telegram notify button (Pricing) ---
+        if st.button("Отправить рекомендацию цены в Telegram", key="notify_price_one"):
+            sku_id = str(r["product_id"])
+            best_price, best_profit, best_q = best
+            msg = (
+                f"🧮 <b>Pricing</b>\n"
+                f"SKU: <code>{sku_id}</code>\n"
+                f"Рекомендуемая цена: <b>{best_price:.0f} ₸</b>\n"
+                f"Ожидаемый профит/нед: ~{best_profit:.0f} ₸ при спросе ≈{best_q:.1f}\n"
+                f"Параметры: p0={base_price:.0f}, landed={c_land:.0f}, "
+                f"fee={mp_fee*100:.0f}%, эласт={elasticity:.2f}, базовый спрос={base_q:.1f}/нед"
+            )
+            ok = tg_send(msg)
+            st.toast("Ушло в Telegram ✅" if ok else "Не удалось отправить ❌")
+
+        
     else:
         st.warning("Загрузи market_snapshot_example.csv и costs_template.csv")
 
