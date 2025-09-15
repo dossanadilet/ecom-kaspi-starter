@@ -41,10 +41,10 @@ st.title("Kaspi E-commerce MVP — Автоматизированный мага
 st.markdown("""
 Этот прототип работает без API Kaspi. 
 1) Обнови CSV в папке `data/`.
-2) Используй вкладки: Market Scan → Landed Cost → Forecast & Pricing → Inventory & KPI.
+2) Используй вкладки: Анализ рынка → Landed Cost → Forecast & Pricing → Inventory & KPI.
 """)
 
-tab1, tab2, tab3, tab4 = st.tabs(["Market Scan", "Landed Cost", "Forecast & Pricing", "Inventory & KPI"])
+tab1, tab2, tab3, tab4 = st.tabs(["Анализ рынка", "Полная себестоимость (с учетом доставки, пошлин и т. д.)", "Прогноз и ценообразование", "Запасы и ключевые показатели (KPI)"])
 
 # Пути к данным
 data_dir = Path(__file__).resolve().parent.parent / "data"
@@ -53,7 +53,7 @@ costs_path  = data_dir / "costs_template.csv"
 inv_path    = data_dir / "inventory_template.csv"
 
 with tab1:
-    st.header("Market Scan (примерные данные)")
+    st.header("Анализ рынка (примерные данные)")
     if market_path.exists():
         dfm = read_csv_smart(market_path)
         st.dataframe(dfm, use_container_width=True)
@@ -62,7 +62,7 @@ with tab1:
         st.warning(f"Файл {market_path.name} не найден")
 
 with tab2:
-    st.header("Landed Cost калькулятор")
+    st.header("Калькулятор полной себестоимости (с учетом доставки, пошлин и т. д.)")
     if costs_path.exists():
         dfc = read_csv_smart(costs_path)
         st.dataframe(dfc, use_container_width=True)
@@ -89,7 +89,7 @@ with tab2:
         st.warning(f"Файл {costs_path.name} не найден")
 
 with tab3:
-    st.header("Forecast & Pricing (демо)")
+    st.header("Прогноз и ценообразование (демо)")
     if market_path.exists() and costs_path.exists():
         dfm = read_csv_smart(market_path)
         dfc = read_csv_smart(costs_path)
@@ -164,7 +164,7 @@ with tab3:
         st.warning("Загрузи market_snapshot_example.csv и costs_template.csv")
 
 with tab4:
-    st.header("Inventory & KPI (черновик)")
+    st.header("Запасы и ключевые показатели (KPI) (черновик)")
     if inv_path.exists():
         dfi = read_csv_smart(inv_path)
 
@@ -271,6 +271,7 @@ with tab4:
         st.caption("В следующих версиях добавим ROP/EOQ, риск OOS и KPI-дашборд.")
     else:
         st.warning(f"Файл {inv_path.name} не найден")
+
 
 
 
