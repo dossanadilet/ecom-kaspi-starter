@@ -81,7 +81,7 @@ with tab2:
         )
         c_land = landed_cost(c)
         col1, col2 = st.columns(2)
-        col1.metric("Landed cost (тг/шт)", f"{c_land:,.0f}")
+        col1.metric("Полная себестоимость (с учетом доставки, пошлин и т. д.) (тг/шт)", f"{c_land:,.0f}")
         pmin = min_price_for_margin(c_land, target_margin=0.2)
         col2.metric("Мин. цена при 20% марже", f"{pmin:,.0f}")
         st.caption("Целевую маржу и комиссию MP дальше учтём в ценообразовании.")
@@ -271,6 +271,7 @@ with tab4:
         st.caption("В следующих версиях добавим ROP/EOQ, риск OOS и KPI-дашборд.")
     else:
         st.warning(f"Файл {inv_path.name} не найден")
+
 
 
 
