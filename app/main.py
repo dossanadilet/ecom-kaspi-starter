@@ -66,7 +66,7 @@ with tab2:
     if costs_path.exists():
         dfc = read_csv_smart(costs_path)
         st.dataframe(dfc, use_container_width=True)
-        sku = st.selectbox("Выбери SKU", dfc["title"].tolist())
+        sku = st.selectbox("Выбери SKU", dfc["product_id"].tolist())
         row = dfc[dfc["product_id"]==sku].iloc[0].to_dict()
         c = CostInputs(
             purchase_cn=row["purchase_cn"],
@@ -271,6 +271,7 @@ with tab4:
         st.caption("В следующих версиях добавим ROP/EOQ, риск OOS и KPI-дашборд.")
     else:
         st.warning(f"Файл {inv_path.name} не найден")
+
 
 
 
