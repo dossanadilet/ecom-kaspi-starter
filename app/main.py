@@ -219,8 +219,8 @@ with tab4:
         rec_qty = int(round(need_qty))
         
         col1, col2, col3 = st.columns(3)
-        col1.metric("Safety Stock (шт)", f"{ss:.0f}")
-        col2.metric("ROP (шт)", f"{rop:.0f}")
+        col1.metric("Страховой запас (шт)", f"{ss:.0f}")
+        col2.metric("Точка повторного заказа ROP (шт)", f"{rop:.0f}")
         col3.metric("Рекомендуемый заказ (шт)", f"{rec_qty}")
         
         st.caption(f"LT={LT} дн, Review={R} дн; On-hand={on_hand}, On-order={on_order}; Z≈{z_value_for_service(service):.2f}")
@@ -271,6 +271,7 @@ with tab4:
         st.caption("В следующих версиях добавим ROP/EOQ, риск OOS и KPI-дашборд.")
     else:
         st.warning(f"Файл {inv_path.name} не найден")
+
 
 
 
