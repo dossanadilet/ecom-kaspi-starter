@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          cd kaspi-ecom-ml
+          python -m pip install --upgrade pip
+          pip install .[dev]
+      - name: Lint
+        run: |
+          cd kaspi-ecom-ml
+          ruff check .
+      - name: Format check
+        run: |
+          cd kaspi-ecom-ml
+          black --check .
+      - name: MyPy
+        run: |
+          cd kaspi-ecom-ml
+          mypy apps services
+      - name: Tests
+        run: |
+          cd kaspi-ecom-ml
+          pytest -q
+
