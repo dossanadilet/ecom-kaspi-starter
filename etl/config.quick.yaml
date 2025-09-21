@@ -1,0 +1,8 @@
+topics:
+  - query: "смартфоны"
+    category: "smartphones"
+
+pages: 1
+delay: 0.9
+split_by_brand: false
+max_items: 60

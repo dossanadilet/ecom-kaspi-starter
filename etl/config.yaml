@@ -1,0 +1,14 @@
+topics:
+  - query: "смартфоны"
+    category: "smartphones"
+  - query: "iphone"
+    category: "smartphones"
+  - query: "samsung"
+    category: "smartphones"
+  - query: "xiaomi"
+    category: "smartphones"
+
+pages: 6
+delay: 0.9
+split_by_brand: false
+max_items: 1000
