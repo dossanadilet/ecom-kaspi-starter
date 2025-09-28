@@ -1,0 +1,32 @@
+{
+  "data_collection": {
+    "enabled": true,
+    "times": [
+      "08:00",
+      "14:00",
+      "20:00"
+    ],
+    "categories": [
+      "smartphones",
+      "laptops",
+      "tablets"
+    ],
+    "pages": 5,
+    "max_items": 105
+  },
+  "notifications": {
+    "forecast_frequency": "weekly",
+    "enabled": true,
+    "time": "09:00"
+  },
+  "telegram": {
+    "enabled": true,
+    "send_errors": true,
+    "send_summaries": true
+  },
+  "pricing": {
+    "auto_update": true,
+    "margin_target": 0.2,
+    "elasticity": -1.0
+  }
+}

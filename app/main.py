@@ -10,7 +10,7 @@ for p in (str(APP_DIR), str(ROOT_DIR)):
 
 import streamlit as st
 import pandas as pd
-from notify import tg_send
+from notify import tg_send, tg_test_connection, get_telegram_status
 
 # локальные импорты (без префикса app.)
 from economics import (
@@ -21,6 +21,7 @@ from economics import (
 
 from pricing   import choose_price_grid
 from forecast  import price_to_demand_linear
+from scheduler import get_scheduler
 
 def read_csv_smart(path):
     # Пытаемся разными кодировками; игнорируем «битые» строки, если такие есть
@@ -44,7 +45,7 @@ st.markdown("""
 2) Используй вкладки: Анализ рынка → Полная себестоимость (с учетом доставки, пошлин и т. д.) → Прогноз и ценообразование →Запасы и ключевые показатели (KPI).
 """)
 
-tab1, tab2, tab3, tab4 = st.tabs(["Анализ рынка", "Полная себестоимость (с учетом доставки, пошлин и т. д.)", "Прогноз и ценообразование", "Запасы и ключевые показатели (KPI)"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Анализ рынка", "Полная себестоимость (с учетом доставки, пошлин и т. д.)", "Прогноз и ценообразование", "Запасы и ключевые показатели (KPI)", "Автоматизация"])
 
 # Пути к данным
 data_dir = Path(__file__).resolve().parent.parent / "data"
@@ -271,6 +272,207 @@ with tab4:
         st.caption("В следующих версиях добавим ROP/EOQ, риск OOS и KPI-дашборд.")
     else:
         st.warning(f"Файл {inv_path.name} не найден")
+
+with tab5:
+    st.header("🤖 Автоматизация и планировщик задач")
+    
+    scheduler = get_scheduler()
+    status = scheduler.get_status()
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if status["running"]:
+            st.success("✅ Планировщик запущен")
+            if st.button("⏹️ Остановить", type="secondary"):
+                scheduler.stop()
+                st.rerun()
+        else:
+            st.error("⏸️ Планировщик остановлен")
+            if st.button("▶️ Запустить", type="primary"):
+                scheduler.start()
+                st.rerun()
+    
+    with col2:
+        st.metric("Запланированных задач", len(status["next_jobs"]))
+    
+    with col3:
+        if st.button("🔄 Тест сбора данных"):
+            with st.spinner("Собираю данные..."):
+                success = scheduler.collect_market_data()
+                if success:
+                    st.success("Данные собраны успешно!")
+                else:
+                    st.error("Ошибка сбора данных")
+    
+    # Настройки планировщика
+    st.subheader("⚙️ Настройки")
+    
+    config = status["config"]
+    
+    with st.form("scheduler_config"):
+        st.write("**Сбор данных**")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            data_enabled = st.checkbox("Включить автосбор", value=config["data_collection"]["enabled"])
+            categories = st.multiselect(
+                "Категории для сбора",
+                ["smartphones", "laptops", "tablets", "gaming", "home_appliances"],
+                default=config["data_collection"]["categories"]
+            )
+        
+        with col2:
+            pages = st.number_input("Страниц для сбора", min_value=1, max_value=5, value=config["data_collection"]["pages"])
+            max_items = st.number_input("Макс. товаров", min_value=50, max_value=500, value=config["data_collection"]["max_items"])
+        
+        st.write("**Время сбора (3 раза в день)**")
+        time_cols = st.columns(3)
+        current_times = config["data_collection"]["times"]
+        
+        with time_cols[0]:
+            time1 = st.time_input("Утром", value=pd.to_datetime(current_times[0]).time() if len(current_times) > 0 else pd.to_datetime("08:00").time())
+        with time_cols[1]:
+            time2 = st.time_input("Днём", value=pd.to_datetime(current_times[1]).time() if len(current_times) > 1 else pd.to_datetime("14:00").time())
+        with time_cols[2]:
+            time3 = st.time_input("Вечером", value=pd.to_datetime(current_times[2]).time() if len(current_times) > 2 else pd.to_datetime("20:00").time())
+        
+        st.write("**Уведомления и прогнозы**")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            notifications_enabled = st.checkbox("Включить уведомления", value=config["notifications"]["enabled"])
+            forecast_freq = st.selectbox(
+                "Частота прогнозов",
+                ["daily", "weekly", "biweekly", "monthly"],
+                index=["daily", "weekly", "biweekly", "monthly"].index(config["notifications"]["forecast_frequency"]),
+                format_func=lambda x: {"daily": "Ежедневно", "weekly": "Еженедельно", "biweekly": "Каждые 2 недели", "monthly": "Ежемесячно"}[x]
+            )
+        
+        with col2:
+            notification_time = st.time_input("Время уведомлений", value=pd.to_datetime(config["notifications"]["time"]).time())
+            elasticity = st.slider("Эластичность спроса", min_value=-3.0, max_value=-0.1, value=config["pricing"]["elasticity"], step=0.1)
+        
+        submitted = st.form_submit_button("💾 Сохранить настройки", type="primary")
+        
+        if submitted:
+            new_config = {
+                "data_collection": {
+                    "enabled": data_enabled,
+                    "times": [time1.strftime("%H:%M"), time2.strftime("%H:%M"), time3.strftime("%H:%M")],
+                    "categories": categories,
+                    "pages": pages,
+                    "max_items": max_items
+                },
+                "notifications": {
+                    "forecast_frequency": forecast_freq,
+                    "enabled": notifications_enabled,
+                    "time": notification_time.strftime("%H:%M")
+                },
+                "telegram": config["telegram"],
+                "pricing": {
+                    "auto_update": True,
+                    "margin_target": 0.2,
+                    "elasticity": elasticity
+                }
+            }
+            
+            scheduler.update_config(new_config)
+            st.success("Настройки сохранены!")
+            st.rerun()
+    
+    # Статистика и журнал
+    st.subheader("📊 Статистика")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if status["next_jobs"]:
+            st.write("**Запланированные задачи:**")
+            for i, job in enumerate(status["next_jobs"], 1):
+                st.text(f"{i}. {job}")
+        else:
+            st.info("Нет запланированных задач")
+    
+    with col2:
+        st.write("**Статус Telegram:**")
+        tg_status = get_telegram_status()
+        st.write(tg_status)
+        
+        if "❌" in tg_status:
+            st.warning("Настройте Telegram для уведомлений")
+            with st.expander("📱 Настройка Telegram бота", expanded=False):
+                st.markdown("""
+                **Пошаговая настройка:**
+                
+                1. **Создайте бота:**
+                   - Напишите @BotFather в Telegram
+                   - Отправьте команду `/newbot`
+                   - Следуйте инструкциям
+                   - Скопируйте полученный токен
+                
+                2. **Получите Chat ID:**
+                   - Добавьте бота в чат или группу
+                   - Напишите боту любое сообщение
+                   - Перейдите по ссылке: `https://api.telegram.org/bot<TOKEN>/getUpdates`
+                   - Найдите `"chat":{"id":-1234567890}` и скопируйте ID
+                
+                3. **Настройте конфигурацию:**
+                   - Отредактируйте файл `.streamlit/secrets.toml`
+                   - Или установите переменные окружения
+                   - Или отредактируйте `.env`
+                """)
+        else:
+            if st.button("🧪 Тест Telegram"):
+                with st.spinner("Тестирую подключение..."):
+                    test_result = tg_test_connection()
+                    if test_result["chat_accessible"]:
+                        st.success("✅ Telegram настроен правильно!")
+                    else:
+                        st.error(f"❌ {test_result.get('error', 'Неизвестная ошибка')}")
+    
+    # Ручные действия
+    st.subheader("🎯 Ручные действия")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("📈 Сгенерировать прогноз"):
+            with st.spinner("Генерирую прогноз..."):
+                scheduler.generate_forecast_report()
+                st.success("Прогноз отправлен!")
+    
+    with col2:
+        if st.button("🔄 Обновить market_snapshot"):
+            with st.spinner("Обновляю данные..."):
+                success = scheduler.collect_market_data()
+                if success:
+                    st.success("Данные обновлены!")
+                    st.rerun()
+                else:
+                    st.error("Ошибка обновления")
+    
+    with col3:
+        if st.button("🧹 Очистить логи"):
+            try:
+                log_path = Path(__file__).resolve().parent.parent / "logs" / "scheduler.log"
+                if log_path.exists():
+                    log_path.unlink()
+                st.success("Логи очищены")
+            except Exception as e:
+                st.error(f"Ошибка: {e}")
+    
+    # Показать последние логи
+    with st.expander("📝 Последние логи планировщика", expanded=False):
+        try:
+            log_path = Path(__file__).resolve().parent.parent / "logs" / "scheduler.log"
+            if log_path.exists():
+                with open(log_path, 'r', encoding='utf-8') as f:
+                    logs = f.readlines()[-50:]  # Последние 50 строк
+                st.text_area("Логи", "\n".join(logs), height=300, disabled=True)
+            else:
+                st.info("Логи пока отсутствуют")
+        except Exception as e:
+            st.error(f"Не удается прочитать логи: {e}")
 
 
 

@@ -1,3 +1,10 @@
+# === Секреты и конфиденциальная информация ===
+.streamlit/secrets.toml
+.env
+*.env
+secrets.*
+config/local_*
+
 # === Python cache / compiled ===
 __pycache__/
 *.py[cod]
@@ -13,21 +20,58 @@ ENV/
 .ipynb_checkpoints
 *.ipynb_convert
 
-# === Data & logs (runtime, не хранить в Git) ===
-data/latest/
-data/daily/
+# === Временные файлы и логи ===
+logs/
+tmp/
 *.log
+*.tmp
+wait_fail_*.png
+
+# === Тестовые данные и временные результаты ===
+data/_tmp_*
+data/daily/
+data/latest/
+data/screens/
+data/*test*
+data/massive_*
+data/multiquery_*
+data/super_aggressive_*
+data/recommendations_*
+data/collection_report_*
+data/kaspi_*dataset*
+*.csv.bak
+
+# === Старые экспериментальные скрипты ===
+analyze_*.py
+check_*.py
+daily_monitor*.py
+final_massive_*.py
+fixed_kaspi_scraper.py
+improved_kaspi_scraper.py
+massive_kaspi_scraper.py
+ml_sales_pipeline*.py
+multiquery_kaspi_scraper.py
+neon_*.py
+super_aggressive_*.py
+temp_capture_all.py
+
+# === Пустые/экспериментальные папки ===
+empty/
+models/
+streamlit/
+kaspi-ecom-ml/
 
 # === System files ===
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # === VS Code ===
 .vscode/
 .history/
 
-# === Streamlit / cache ===
-.streamlit/secrets.toml
+# === Playwright браузерные файлы ===
+.playwright/
 .streamlit/config.toml
 .streamlit/cache/
 .streamlit/logs/
@@ -40,3 +84,4 @@ Thumbs.db
 *.tmp
 
 models/forecast.csv
+.fake
